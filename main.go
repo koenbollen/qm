@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"syscall"
 	"time"
 )
@@ -78,7 +79,11 @@ func Spawn() {
 			Setsid: true,
 		},
 	}
-	_, err = os.StartProcess(os.Args[0], os.Args, attr)
+	path, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		path = os.Args[0]
+	}
+	_, err = os.StartProcess(path, os.Args, attr)
 	if err != nil {
 		panic(err)
 	}
