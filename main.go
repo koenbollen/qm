@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
 	"time"
 )
@@ -83,10 +84,21 @@ func Spawn() {
 	if err != nil {
 		path = os.Args[0]
 	}
-	_, err = os.StartProcess(path, os.Args, attr)
+	process, err := os.StartProcess(path, os.Args, attr)
 	if err != nil {
 		panic(err)
 	}
+
+	// Trap interrupt to close stdin, it's kept open by the child process:
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for _ = range c {
+			os.Stdin.Close()
+			process.Kill()
+			os.Exit(0)
+		}
+	}()
 
 	line, _, err := bufio.NewReader(r).ReadLine()
 	if err != nil {
